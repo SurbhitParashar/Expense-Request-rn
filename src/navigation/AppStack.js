@@ -5,6 +5,7 @@ import AddExpense from '../screens/AddExpense';
 import AddTripDetails from '../screens/AddTripDetails';
 import ExpenseDateOverview from '../screens/ExpenseDateOverview';
 import DailyExpenseReceipts from '../screens/DailyExpenseReceipts';
+import ProfilePage from '../screens/Profile';
 
 const AppStack = () => {
   const Stack = createNativeStackNavigator();
@@ -21,6 +22,7 @@ const AppStack = () => {
         name="DailyExpenseReceipts"
         component={DailyExpenseReceipts}
       />
+      <Stack.Screen name="Profile" component={ProfilePage} />
     </Stack.Navigator>
   );
 };

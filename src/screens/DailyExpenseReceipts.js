@@ -21,7 +21,7 @@ const { width } = Dimensions.get('window');
 const DailyExpenseReceipts = ({ navigation, route }) => {
     // Receive dateData and tripName from params
     const [expenses, setExpenses] = useState([]);
-    console.log(route.params)
+    // console.log(route.params)
     const {
         dateData = [],
         displayDate = '',
@@ -70,7 +70,7 @@ const DailyExpenseReceipts = ({ navigation, route }) => {
     const handleDeleteExpense = (expense) => {
   Alert.alert(
     "Delete Receipt",
-    "Are you sure you want to delete this receipt?",
+    "Are you sure you want to delete this receipt? \n(this will be permanentaly deleted)",
     [
       { text: "Cancel", style: "cancel" },
       {

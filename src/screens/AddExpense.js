@@ -201,7 +201,7 @@ const AddExpense = ({ navigation, route }) => {
       Alert.alert(
         'Success',
         editingExpense ? 'Expense updated! \n (updates will show when you reopen the trip)' : 'Expense created!',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
+        [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
       );
 
     } catch (err) {

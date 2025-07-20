@@ -19,10 +19,13 @@
       "package": "com.university.expenserequestrn",
       "edgeToEdgeEnabled": true
     },
-    
-    
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9eced35c-c273-47ed-bd28-1fbdac60e5fe"
+      }
     }
   }
 }

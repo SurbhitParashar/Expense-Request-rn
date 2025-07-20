@@ -1,4 +1,4 @@
-import React, { useState,useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -6,24 +6,34 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  Alert,
+  Alert, ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth } from '../config/firebase';
+import { auth, db } from '../config/firebase';
 import {
   signInWithEmailAndPassword,
   fetchSignInMethodsForEmail,
 } from 'firebase/auth';
 import { AppDataContext } from '../context/TripData';
+import {
+  collection,
+  query,
+  where,
+  getDocs
+} from 'firebase/firestore';
 
 
 export default function SignIn({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail]             = useState('');
-  const [password, setPassword]       = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading]       = useState(false);
 
-  const { login, completeRegistration } = useContext(AppDataContext);
+  const { login, completeRegistration, loadTrips } = useContext(AppDataContext);
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -31,8 +41,8 @@ export default function SignIn({ navigation }) {
     }
 
     try {
-      const token=await AsyncStorage.getItem('userToken');
-      console.log(token)
+      setLoading(true)
+
       // 1️⃣ Sign in
       const userCredential = await signInWithEmailAndPassword(
         auth,
@@ -42,20 +52,35 @@ export default function SignIn({ navigation }) {
 
       // 2️⃣ Grab their Firebase ID token
       const idToken = await userCredential.user.getIdToken();
-
-      // 3️⃣ Persist it
       await AsyncStorage.setItem('userToken', idToken);
-      
+
+
+      const uid = userCredential.user.uid;
+      const q = query(collection(db, 'users'), where('uid', '==', uid));
+      const snaps = await getDocs(q);
+
+      let storedPCard = null
+      if (!snaps.empty) {
+        // assuming exactly one match:
+        const docSnap = snaps.docs[0]
+        storedPCard = docSnap.id   // this is your pCard
+
+        console.log('storedPCard', storedPCard)
+        await AsyncStorage.setItem('userPCard', storedPCard)
+      }
+
       login();
-      
-      const existingPCard = await AsyncStorage.getItem('userPCard');
-      if(!existingPCard){
+
+
+      if (storedPCard) {
         completeRegistration();
+        await loadTrips();
         navigation.replace('Home')
       }
       navigation.replace('RegistrationForm');
-      
+
     } catch (err) {
+      setLoading(false)
       // Friendly error messages
       if (err.code === 'auth/user-not-found') {
         return Alert.alert('No account found', 'Please register first.');
@@ -70,8 +95,21 @@ export default function SignIn({ navigation }) {
 
 
   return (
-    <View style={styles.container}>
+    
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" />
+        </View>
+      )}
       {/* Logo */}
       <View style={styles.logoContainer}>
         <Image source={require('../../assets/images/logo.png')} style={styles.logo} />
@@ -116,20 +154,30 @@ export default function SignIn({ navigation }) {
       </TouchableOpacity>
 
       {/* Footer */}
-      <TouchableOpacity onPress={()=> navigation.navigate('SignUp')} style={styles.link}>
+      <TouchableOpacity onPress={() => navigation.navigate('SignUp')} style={styles.link}>
         <Text style={styles.linkText}>New User? Create Account</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.link2}>
         <Text style={[styles.linkText, { fontSize: 12, color: '#888' }]}>Forgot Password?</Text>
       </TouchableOpacity>
-    </View>
+    
+    </ScrollView>
+   </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+    color:"#d13a3d"
+  },
   container: {
     flex: 1,
-    padding: 20,
+    padding: 10,
     backgroundColor: '#fff',
     justifyContent: 'center',
   },

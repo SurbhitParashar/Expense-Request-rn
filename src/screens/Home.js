@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  Platform
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { auth } from '../config/firebase';
@@ -19,13 +20,22 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 
 const ExpenseTrackerApp = ({ navigation }) => {
-  const { userName, trips, signOut, loadTrips } = useContext(AppDataContext);
+  const { trips, loadTrips } = useContext(AppDataContext);
+  const [userName, setUserName] = useState('');
 
   useFocusEffect(
     useCallback(() => {
       loadTrips();
     }, [loadTrips])
   );
+
+  useEffect(()=>{
+    (async () => {
+      const userName=await AsyncStorage.getItem('userName');
+      // console.log(userName)
+      setUserName(userName);
+    })()
+  },[])
   
   const formatDateRange = (start, end) => {
     const options = { day: 'numeric', month: 'short' };
@@ -39,18 +49,44 @@ const ExpenseTrackerApp = ({ navigation }) => {
       case 'conference': return 'monitor';
       case 'workshop': return 'tool';
       case 'seminar': return 'book';
-      default: return 'calendar';
+      case 'business': return 'briefcase';
+      case 'meeting': return 'users';
+      case 'training': return 'book-open';
+      case 'exhibition': return 'eye';
+      case 'summit': return 'trending-up';
+      case 'symposium': return 'mic';
+      case 'convention': return 'globe';
+      default: return 'map-pin';
     }
   };
 
-
-
-  
-
-
+  // Render empty state when no trips
+  const renderEmptyState = () => (
+    <View style={styles.emptyStateContainer}>
+      <View style={styles.emptyStateIconContainer}>
+        <Feather name="map-pin" size={48} color="#d13a3d" />
+      </View>
+      <Text style={styles.emptyStateTitle}>No Trips Added Yet</Text>
+      <Text style={styles.emptyStateSubtitle}>
+        Start by adding your first conference or business trip to track expenses
+      </Text>
+      <TouchableOpacity 
+        style={styles.emptyStateButton}
+        onPress={() => navigation.navigate('AddTripDetails')}
+      >
+        <Feather name="plus" size={16} color="#fff" />
+        <Text style={styles.emptyStateButtonText}>Add First Trip</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+       style={[
+         styles.container,
+         { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }
+       ]}
+     >
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
       {/* Header */}
@@ -59,9 +95,9 @@ const ExpenseTrackerApp = ({ navigation }) => {
           <Text style={styles.headerTitle}>Hi{` ${userName}`}!</Text>
         </View>
         <View style={styles.profileContainer}>
-          <View style={styles.profileIcon}>
+          <TouchableOpacity style={styles.profileIcon} onPress={() => navigation.navigate('Profile')}>
             <Feather name="user" size={20} color="#fff" />
-          </View>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -129,56 +165,145 @@ const ExpenseTrackerApp = ({ navigation }) => {
               <Feather name="more-horizontal" size={20} color="#999" />
             </TouchableOpacity>
           </View>
-          {trips.map((item) => (
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('ExpenseDateOverview', {
-                  tripId: item.id,
-                  tripName: item.title,
-                  tripCity: item.location,
-                  tripDuration: formatDateRange(item.startDate, item.endDate),
-                })
-              }>
-
-              <View key={item.id} style={styles.entryItem}>
-                <View style={styles.entryIconContainer}>
-                  <Feather name={getTripIcon(item.type)} size={20} color="#d13a3d" />
+          
+          {/* Conditional rendering based on trips length */}
+          {trips && trips.length > 0 ? (
+            trips.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                onPress={() =>
+                  navigation.navigate('ExpenseDateOverview', {
+                    tripId: item.id,
+                    tripName: item.title,
+                    tripCity: item.location,
+                    tripDuration: formatDateRange(item.startDate, item.endDate),
+                  })
+                }>
+                <View style={styles.entryItem}>
+                  <View style={styles.entryIconContainer}>
+                    <Feather name={getTripIcon(item.type)} size={20} color="#d13a3d" />
+                  </View>
+                  <View style={styles.entryContent}>
+                    <Text style={styles.entryCategory}>{item.title}</Text>
+                    <Text style={styles.entryLocation}>{item.location}</Text>
+                    <Text style={styles.entryDate}>{formatDateRange(item.startDate, item.endDate)}</Text>
+                  </View>
                 </View>
-                <View style={styles.entryContent}>
-                  <Text style={styles.entryCategory}>{item.title}</Text>
-                  <Text style={styles.entryLocation}>{item.location}</Text>
-                  <Text style={styles.entryDate}>{formatDateRange(item.startDate, item.endDate)}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-
-          <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
-            <Text style={styles.signOutText}>Sign Out</Text>
-          </TouchableOpacity>
+              </TouchableOpacity>
+            ))
+          ) : (
+            renderEmptyState()
+          )}
         </View>
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <View style={styles.bottomNavContainer}>
-        <View style={styles.bottomNav}>
-          <TouchableOpacity style={styles.navItem}>
-            <Feather name="home" size={24} color="#d13a3d" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddExpense')}>
-            <Feather name="plus" size={24} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('AddTripDetails')}>
-            <Feather name="file-text" size={24} color="#999" />
-          </TouchableOpacity>
-
-        </View>
-      </View>
+      <View style={styles.floatingContainer}>
+  <View style={styles.floatingNav}>
+    <TouchableOpacity 
+      style={[styles.navItem, styles.activeNavItem]}
+      activeOpacity={0.7}
+    >
+      <Feather name="home" size={24} color="#d13a3d" />
+    </TouchableOpacity>
+    
+    <TouchableOpacity 
+      style={styles.addButton} 
+      onPress={() => navigation.navigate('AddExpense')}
+      activeOpacity={0.8}
+    >
+      <Feather name="plus" size={26} color="#fff" />
+    </TouchableOpacity>
+    
+    <TouchableOpacity 
+      style={styles.navItem} 
+      onPress={() => navigation.navigate('AddTripDetails')}
+      activeOpacity={0.7}
+    >
+      <Feather name="file-text" size={24} color="#999" />
+    </TouchableOpacity>
+  </View>
+</View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  bottomNavContainer: {
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  right: 0,
+  backgroundColor: 'rgba(255, 255, 255, 0.88)',
+  backdropFilter: 'blur(20px)',
+  borderTopWidth: 0.5,
+  borderTopColor: 'rgba(209, 58, 61, 0.08)',
+  paddingBottom: Platform.OS === 'ios' ? 30 : 15,
+},
+bottomNav: {
+  flexDirection: 'row',
+  justifyContent: 'space-around',
+  alignItems: 'center',
+  paddingVertical: 14,
+  paddingHorizontal: 24,
+  position: 'relative',
+},
+navItem: {
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 14,
+  borderRadius: 20,
+  minWidth: 52,
+  minHeight: 52,
+  backgroundColor: 'transparent',
+},
+activeNavItem: {
+  backgroundColor: 'rgba(209, 58, 61, 0.08)',
+  borderWidth: 1,
+  borderColor: 'rgba(209, 58, 61, 0.15)',
+},
+addButton: {
+  width: 66,
+  height: 66,
+  borderRadius: 33,
+  backgroundColor: '#d13a3d',
+  justifyContent: 'center',
+  alignItems: 'center',
+  elevation: 12,
+  shadowColor: '#d13a3d',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.35,
+  shadowRadius: 10,
+  borderWidth: 4,
+  borderColor: 'rgba(255, 255, 255, 0.95)',
+  position: 'relative',
+  transform: [{ translateY: -3 }],
+},
+// Alternative floating footer styles
+floatingContainer: {
+  position: 'absolute',
+  bottom: 20,
+  left: 24,
+  right: 24,
+  backgroundColor: 'rgba(255, 255, 255, 0.92)',
+  backdropFilter: 'blur(25px)',
+  borderRadius: 32,
+  borderWidth: 0.5,
+  borderColor: 'rgba(209, 58, 61, 0.08)',
+  elevation: 15,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 8 },
+  shadowOpacity: 0.12,
+  shadowRadius: 15,
+  paddingBottom: Platform.OS === 'ios' ? 8 : 4,
+},
+floatingNav: {
+  flexDirection: 'row',
+  justifyContent: 'space-around',
+  alignItems: 'center',
+  paddingVertical: 12,
+  paddingHorizontal: 20,
+},
   container: {
     flex: 1,
     backgroundColor: '#fff',
@@ -187,8 +312,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: 22,
+    marginBottom:10,
     marginTop:10
   },
   headerTitle: {
@@ -232,7 +357,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#999',
+    color: 'white',
     marginBottom: 4,
   },
   primaryStatLabel: {
@@ -244,12 +369,12 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: 'white',
   },
   primaryStatValue: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: 'white',
   },
   actionContainer: {
     flexDirection: 'row',
@@ -432,16 +557,6 @@ const styles = StyleSheet.create({
   statContent: {
     flex: 1,
   },
-  statLabel: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 2,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-  },
   statRemainingValue: {
     fontSize: 16,
     fontWeight: '600',
@@ -499,19 +614,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 24,
     backgroundColor: '#f8f9fa',
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: '#fff',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
   },
   actionText: {
     marginLeft: 8,
@@ -572,15 +674,55 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
   },
-  signOutButton: {
-    backgroundColor: '#E74C3C',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 6,
+  
+  // Empty State Styles
+  emptyStateContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 30,
+    paddingHorizontal: 40,
   },
-  signOutText: {
-    color: 'white',
-    fontSize: 16,
+  emptyStateIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(209, 58, 61, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyStateSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 32,
+  },
+  emptyStateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#d13a3d',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    elevation: 2,
+    shadowColor: '#d13a3d',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  emptyStateButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
 

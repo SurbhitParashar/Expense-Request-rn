@@ -10,10 +10,12 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { FontAwesome, MaterialIcons, Feather } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
-import { db } from '../config/firebase';
+import { auth, db } from '../config/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useContext } from 'react';
@@ -45,28 +47,30 @@ export default function RegistrationForm({ navigation }) {
 
     try {
       await AsyncStorage.setItem('userPCard', formData.pCard);  // when user logs in or registers
-      await AsyncStorage.setItem('userName',formData.name);
-      
-      
+      await AsyncStorage.setItem('userName', formData.name);
+      await AsyncStorage.setItem('department', formData.department);
+
       // Write to Firestore under collection 'users', doc ID = pCard
       await setDoc(doc(db, 'users', pCard), {
+        uid: auth.currentUser.uid,
+        email: auth.currentUser.email,
         avatar: selectedAvatar,
         name,
         department,
         managerName,
         managerEmail,
         createdAt: new Date().toISOString(),
-        hasRegistered: true  
+        hasRegistered: true
       });
-      
+
       completeRegistration();
-      
+
       Alert.alert('Success', 'Profile saved! Moving to home page...',
         [
           { text: 'OK', onPress: () => navigation.replace('Home') }
         ]
-       );
-      
+      );
+
     } catch (err) {
       console.error(err);
       Alert.alert('Save Error', err.message);
@@ -79,16 +83,24 @@ export default function RegistrationForm({ navigation }) {
   ];
 
   const departmentOptions = [
-    'Finance',
-    'HR',
-    'Operations',
-    'IT',
-    'Marketing',
+    'ITS (information technology services)',
+    'Accounting',
+    'Registrar',
+    'HR (human Resources)',
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+     <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.select({ ios: 0, android: 20 })}
+    >
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}> */}
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.welcomeContainer}>
@@ -242,7 +254,8 @@ export default function RegistrationForm({ navigation }) {
           <Feather name="chevron-right" size={20} color="white" />
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </KeyboardAvoidingView>
+
   );
 }
 
