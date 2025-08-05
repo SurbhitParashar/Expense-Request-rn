@@ -60,13 +60,18 @@ export default function SignIn({ navigation }) {
       const snaps = await getDocs(q);
 
       let storedPCard = null
+      let storedName = null
+      
       if (!snaps.empty) {
         // assuming exactly one match:
         const docSnap = snaps.docs[0]
         storedPCard = docSnap.id   // this is your pCard
+        const userData = docSnap.data();
+        storedName = userData.name || '';
 
-        console.log('storedPCard', storedPCard)
+        // console.log('storedPCard', storedPCard)
         await AsyncStorage.setItem('userPCard', storedPCard)
+        await AsyncStorage.setItem('userName', storedName);
       }
 
       login();
@@ -76,8 +81,9 @@ export default function SignIn({ navigation }) {
         completeRegistration();
         await loadTrips();
         navigation.replace('Home')
-      }
+      }else{
       navigation.replace('RegistrationForm');
+      }
 
     } catch (err) {
       setLoading(false)

@@ -298,13 +298,15 @@ const styles = StyleSheet.create({
     detailRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         paddingVertical: 8,
+        flexWrap: 'wrap',
     },
     detailLabel: {
         fontSize: 16,
         color: '#666',
-        flex:1
+        flex:1,
+        flexBasis:'40%',
     },
     detailValue: {
         fontSize: 16,
@@ -312,7 +314,8 @@ const styles = StyleSheet.create({
         color: '#333',
         flexShrink:1,
         flexWrap: 'wrap',
-        textAlign:'right'
+        textAlign:'right',
+        flexBasis: '60%'
     },
     aboutText: {
         fontSize: 16,
