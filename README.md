@@ -73,7 +73,7 @@ A mobile app that allows users to:
 ### 1. Clone the repository
 
 ```bash
-git clone [<your-repo-url>](https://github.com/SurbhitParashar/Expense-Request-rn.git)
+git clone https://github.com/SurbhitParashar/Expense-Request-rn.git
 cd expense-request-rn
 ```
 
