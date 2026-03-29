@@ -135,10 +135,7 @@ const LoadingScreen = () => {
         </View>
       </Animated.View>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Powered by Advanced Technology</Text>
-      </View>
+      
     </View>
   );
 };
